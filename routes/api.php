@@ -9,6 +9,7 @@ use App\Http\Controllers\EventController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\TicketController;      
 use App\Http\Controllers\CategoryController;
+use App\Http\Controllers\PublicEventController;
 
 // Protected Routes (Requires Authentication)
 Route::middleware(['auth:sanctum'])->group(function () {
@@ -43,6 +44,19 @@ Route::middleware(['auth:sanctum'])->group(function () {
             return response()->json(['message' => 'Welcome to the attendee dashboard']);
         });
     });
+
+    Route::post('/events/{event}/register', [PublicEventController::class, 'register']);
 });
+
+// Public Event Routes (No authentication required)
+Route::prefix('public')->group(function () {
+    Route::get('/events', [PublicEventController::class, 'index']);
+    Route::get('/events/{event}', [PublicEventController::class, 'show']);
+});
+
+// Ticket verification route
+Route::get('/tickets/verify/{registrationId}', [PublicEventController::class, 'verifyTicket'])
+    ->name('tickets.verify');
+
 require __DIR__.'/auth.php';
 
