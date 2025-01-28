@@ -9,6 +9,8 @@ use App\Models\Notification;
 use Illuminate\Http\Request;
 use Stripe\Stripe;
 use Stripe\PaymentIntent;
+use Illuminate\Support\Facades\Log;
+
 
 class PaymentController extends Controller
 {
@@ -22,6 +24,13 @@ class PaymentController extends Controller
      */
     public function createPaymentIntent(Event $event)
     {
+        // Add role verification
+        if (auth()->user()->role !== 'attendee') {
+            return response()->json([
+                'message' => 'Only attendees can make payments'
+            ], 403);
+        }
+
         try {
             // Check if user already has a pending payment for this event
             $existingPayment = Payment::where([
@@ -76,14 +85,23 @@ class PaymentController extends Controller
         $sig_header = $request->header('Stripe-Signature');
         $endpoint_secret = config('services.stripe.webhook_secret');
 
+        if (!$endpoint_secret) {
+            Log::error('Stripe webhook secret is not configured');
+            return response()->json(['message' => 'Webhook secret not configured'], 500);
+        }
+
         try {
             $event = \Stripe\Webhook::constructEvent(
                 $request->getContent(),
                 $sig_header,
                 $endpoint_secret
             );
-        } catch (\Exception $e) {
+        } catch(\UnexpectedValueException $e) {
+            // Invalid payload
             return response()->json(['message' => 'Invalid payload'], 400);
+        } catch(\Stripe\Exception\SignatureVerificationException $e) {
+            // Invalid signature
+            return response()->json(['message' => 'Invalid signature'], 400);
         }
 
         if ($event->type === 'payment_intent.succeeded') {

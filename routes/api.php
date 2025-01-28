@@ -40,12 +40,21 @@ Route::middleware(['auth:sanctum'])->group(function () {
     });
 
     Route::middleware('role:attendee')->prefix('attendee')->group(function () {
-        Route::get('/attendee/dashboard', function () {
+        Route::get('/dashboard', function () {
             return response()->json(['message' => 'Welcome to the attendee dashboard']);
         });
     });
 
     Route::post('/events/{event}/register', [PublicEventController::class, 'register']);
+
+    // Payment Routes - Only for attendees
+    Route::middleware('role:attendee')->group(function () {
+        Route::prefix('payments')->group(function () {
+            Route::post('/intent/{event}', [PaymentController::class, 'createPaymentIntent']);
+            Route::get('/status/{paymentId}', [PaymentController::class, 'getPaymentStatus']);
+            Route::get('/history', [PaymentController::class, 'getUserPayments']);
+        });
+    });
 });
 
 // Public Event Routes (No authentication required)
@@ -57,6 +66,9 @@ Route::prefix('public')->group(function () {
 // Ticket verification route
 Route::get('/tickets/verify/{registrationId}', [PublicEventController::class, 'verifyTicket'])
     ->name('tickets.verify');
+
+// Stripe Webhook (No authentication required)
+Route::post('/webhook/stripe', [PaymentController::class, 'handleWebhook']);
 
 require __DIR__.'/auth.php';
 
