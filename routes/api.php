@@ -10,6 +10,7 @@ use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\TicketController;      
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\PublicEventController;
+use App\Http\Controllers\NotificationController;
 
 // Protected Routes (Requires Authentication)
 Route::middleware(['auth:sanctum'])->group(function () {
@@ -19,6 +20,8 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
     Route::middleware('role:admin')->prefix('admin')->group(function () {
         Route::patch('events/{event}/moderate', [EventController::class, 'moderate']);
+        Route::patch('/registrations/{registration}/status', [OrganizerController::class, 'updateRegistrationStatus']);//  dont be confused by the name of the controller bc admin can also update the registration status for the attendee
+        Route::get('/events/{event}/registrations', [OrganizerController::class, 'eventRegistrations']); // here the admin can see all events analitics , and again dont be confused about the name of the controller
         Route::get('/dashboard', [AdminController::class, 'dashboardOverview']);
         Route::get('/users', [AdminController::class, 'index']);
         Route::apiResources([
@@ -43,6 +46,13 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::get('/dashboard', function () {
             return response()->json(['message' => 'Welcome to the attendee dashboard']);
         });
+    });
+
+    // Notification routes (accessible by all authenticated users)
+    Route::prefix('notifications')->group(function () {
+        Route::get('/', [NotificationController::class, 'index']);
+        Route::patch('/{id}/read', [NotificationController::class, 'markAsRead']);
+        Route::patch('/mark-all-read', [NotificationController::class, 'markAllAsRead']);
     });
 
     Route::post('/events/{event}/register', [PublicEventController::class, 'register']);

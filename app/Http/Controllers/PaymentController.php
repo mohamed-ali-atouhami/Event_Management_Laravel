@@ -10,6 +10,9 @@ use Illuminate\Http\Request;
 use Stripe\Stripe;
 use Stripe\PaymentIntent;
 use Illuminate\Support\Facades\Log;
+use App\Notifications\PaymentSuccessful;
+use App\Notifications\EventRegistration;
+use App\Models\User;
 
 
 class PaymentController extends Controller
@@ -107,7 +110,6 @@ class PaymentController extends Controller
         if ($event->type === 'payment_intent.succeeded') {
             $paymentIntent = $event->data->object;
             
-            // Update payment status
             $payment = Payment::where([
                 'user_id' => $paymentIntent->metadata->user_id,
                 'event_id' => $paymentIntent->metadata->event_id,
@@ -117,7 +119,6 @@ class PaymentController extends Controller
             if ($payment) {
                 $payment->update(['status' => 'completed']);
 
-                // Create or update registration
                 $registration = Registration::updateOrCreate(
                     [
                         'user_id' => $paymentIntent->metadata->user_id,
@@ -126,12 +127,13 @@ class PaymentController extends Controller
                     ['status' => 'confirmed']
                 );
 
-                // Create notification
-                Notification::create([
-                    'user_id' => $paymentIntent->metadata->user_id,
-                    'message' => 'Payment successful for event: ' . $registration->event->title,
-                    'is_read' => false
-                ]);
+                // Send notifications
+                $user = User::find($paymentIntent->metadata->user_id);
+                $user->notify(new PaymentSuccessful($payment));
+                
+                // Notify organizer of new registration
+                $event = Event::find($paymentIntent->metadata->event_id);
+                $event->organizer->notify(new EventRegistration($registration));
             }
         }
 

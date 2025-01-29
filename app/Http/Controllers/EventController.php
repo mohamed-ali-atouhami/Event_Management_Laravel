@@ -21,16 +21,15 @@ class EventController extends Controller
         // Start with a base query
         $query = Event::query()->with('organizer');
 
-        // Apply user role filter
-        if (!auth()->user()->isAdmin()) {
-            $query->where('organizer_id', auth()->id())
-                  ->whereIn('status', ['approved', 'rejected', 'pending']);
+        // If user is an attendee, show only approved events
+        if (auth()->user()->role === 'attendee') {
+            $query->where('status', 'approved');
         }
-
-        // Apply status filter
-        // if ($request->has('status')) {
-        //     $query->where('status', $request->status);
-        // }
+        // If user is an organizer, show only their events
+        elseif (auth()->user()->role === 'organizer') {
+            $query->where('organizer_id', auth()->id());
+        }
+        // Admin can see all events
 
         // Apply location filter
         if ($request->has('location')) {
@@ -51,7 +50,15 @@ class EventController extends Controller
      */
     public function store(StoreEventRequest $request) : JsonResponse
     {
+        // Check if user has permission to create events
+        if (!auth()->user()->isAdmin() && auth()->user()->role !== 'organizer') {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
         $validateForms = $request->validated();
+        
+        // Set the organizer_id to the current user
+        $validateForms['organizer_id'] = auth()->id();
         
         // Handle image upload
         if ($request->hasFile('image')) {
@@ -76,6 +83,15 @@ class EventController extends Controller
      */
     public function show(Event $event) : JsonResponse
     {
+        // Check if user has permission to view this event
+        if (auth()->user()->role === 'attendee' && $event->status !== 'approved') {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+        
+        if (auth()->user()->role === 'organizer' && $event->organizer_id !== auth()->id()) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
         $response =  new EventResource($event->load('organizer'));
         return response()->json([
             "event" => $response,
@@ -87,10 +103,12 @@ class EventController extends Controller
      */
     public function update(UpdateEventRequest $request, Event $event) : JsonResponse
     {
-        if (!auth()->user()->isAdmin()) {
+        // Check if user has permission to update this event
+        if (!auth()->user()->isAdmin() && 
+            (auth()->user()->role !== 'organizer' || $event->organizer_id !== auth()->id())) {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
-        
+
         $validateForms = $request->validated();
         // Handle image upload
         if ($request->hasFile('image')) {
@@ -120,7 +138,9 @@ class EventController extends Controller
      */
     public function destroy(Event $event) : JsonResponse
     {
-        if (!auth()->user()->isAdmin()) {
+        // Check if user has permission to delete this event
+        if (!auth()->user()->isAdmin() && 
+            (auth()->user()->role !== 'organizer' || $event->organizer_id !== auth()->id())) {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
         

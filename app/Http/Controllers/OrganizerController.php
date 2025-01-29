@@ -55,6 +55,11 @@ class OrganizerController extends Controller
     {
         $event = Event::with(['registrations.user'])->findOrFail($eventId);
         
+        // Check if user is admin or the event organizer
+        if (!auth()->user()->isAdmin() && $event->organizer_id !== auth()->id()) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+        
         $registrations = $event->registrations()->with('user')
             ->join('events', 'registrations.event_id', '=', 'events.id')
             ->select('registrations.*')
@@ -87,8 +92,8 @@ class OrganizerController extends Controller
 
         $registration = Registration::findOrFail($registrationId);
         
-        // Check if the authenticated organizer owns the event
-        if ($registration->event->organizer_id !== auth()->id()) {
+        // Check if the user is admin or the authenticated organizer owns the event
+        if (!auth()->user()->isAdmin() && $registration->event->organizer_id !== auth()->id()) {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 
