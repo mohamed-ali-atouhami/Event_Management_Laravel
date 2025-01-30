@@ -11,7 +11,12 @@ class NotificationController extends Controller
         $notifications = auth()->user()->notifications()->paginate(10);
         return response()->json($notifications);
     }
-
+		#unread notifications
+		public function indexUnreadNotifications()
+		{
+				$unread_notifications = auth()->user()->unreadNotifications()->get();
+				return response($unread_notifications);
+		}
     public function markAsRead($id)
     {
         $notification = auth()->user()->notifications()->findOrFail($id);
