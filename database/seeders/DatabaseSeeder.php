@@ -9,7 +9,6 @@ use Database\Seeders\CategorySeeder;
 use Database\Seeders\EventSeeder;
 use Database\Seeders\RegistrationSeeder;
 use Database\Seeders\PaymentSeeder;
-use Database\Seeders\NotificationSeeder;
 use Database\Seeders\ReviewSeeder;
 use Database\Seeders\TicketSeeder;
 
@@ -32,7 +31,6 @@ class DatabaseSeeder extends Seeder
             EventSeeder::class,
             RegistrationSeeder::class,
             PaymentSeeder::class,
-            NotificationSeeder::class,
             ReviewSeeder::class,
             TicketSeeder::class,
         ]);

@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Event;
 use App\Models\Registration;
+use App\Notifications\EventRegistration;
+use App\Notifications\RegistrationStatusChanged;
 
 class OrganizerController extends Controller
 {
@@ -100,6 +102,9 @@ class OrganizerController extends Controller
         $registration->update([
             'status' => $request->status
         ]);
+
+        // Notify attendee about registration status change
+        $registration->user->notify(new RegistrationStatusChanged($registration));
 
         return response()->json([
             'message' => 'Registration status updated successfully',

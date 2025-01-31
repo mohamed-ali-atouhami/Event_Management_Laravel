@@ -10,6 +10,9 @@ use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Http\Request;
+use App\Notifications\EventNeedsApproval;
+use App\Notifications\EventStatusChanged;
+use App\Models\User;
 
 class EventController extends Controller
 {
@@ -72,6 +75,13 @@ class EventController extends Controller
         $validated['status'] = 'pending';
         $event = Event::create($validateForms);
         $response = new EventResource($event);
+
+        // Notify all admins about new event needing approval
+        $admins = User::where('role', 'admin')->get();
+        foreach ($admins as $admin) {
+            $admin->notify(new EventNeedsApproval($event));
+        }
+
         return response()->json([
             "event" => $response,
             "message" => __("Event Created successfully !!")
@@ -175,6 +185,9 @@ class EventController extends Controller
             'status' => $validated['status'],
             'rejection_reason' => $validated['rejection_reason'] ?? null
         ]);
+
+        // Notify organizer about event status change
+        $event->organizer->notify(new EventStatusChanged($event, $validated['status']));
 
         return response()->json([
             'event' => new EventResource($event),

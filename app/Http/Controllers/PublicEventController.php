@@ -11,6 +11,8 @@ use SimpleSoftwareIO\QrCode\Facades\QrCode;
 use Illuminate\Support\Str;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Http\JsonResponse;
+use App\Notifications\EventRegistration;
+use App\Models\User;
 
 class PublicEventController extends Controller
 {
@@ -98,6 +100,15 @@ class PublicEventController extends Controller
             'registration_id' => $registration->id,
             'qr_code' => $qrCode
         ]);
+
+        // Notify organizer about new registration
+        $event->organizer->notify(new EventRegistration($registration));
+
+        // Notify admins about new registration
+        $admins = User::where('role', 'admin')->get();
+        foreach ($admins as $admin) {
+            $admin->notify(new EventRegistration($registration));
+        }
 
         return response()->json([
             'message' => 'Registration successful',

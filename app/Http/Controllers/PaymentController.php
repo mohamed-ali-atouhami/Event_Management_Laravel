@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Models\Event;
 use App\Models\Payment;
 use App\Models\Registration;
-use App\Models\Notification;
 use Illuminate\Http\Request;
 use Stripe\Stripe;
 use Stripe\PaymentIntent;
@@ -127,11 +126,11 @@ class PaymentController extends Controller
                     ['status' => 'confirmed']
                 );
 
-                // Send notifications
+                // Notify user about successful payment
                 $user = User::find($paymentIntent->metadata->user_id);
                 $user->notify(new PaymentSuccessful($payment));
-                
-                // Notify organizer of new registration
+
+                // Notify organizer about new registration
                 $event = Event::find($paymentIntent->metadata->event_id);
                 $event->organizer->notify(new EventRegistration($registration));
             }
