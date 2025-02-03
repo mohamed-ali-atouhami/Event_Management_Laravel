@@ -11,7 +11,7 @@ use App\Http\Controllers\TicketController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\PublicEventController;
 use App\Http\Controllers\NotificationController;
-
+use App\Http\Controllers\ReviewController;
 // Protected Routes (Requires Authentication)
 Route::middleware(['auth:sanctum'])->group(function () {
     //Route::get('/user', function (Request $request) {
@@ -29,6 +29,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
             'events' => EventController::class,
             'categories' => CategoryController::class,
         ]);     
+        Route::delete('/reviews/{review}', [ReviewController::class, 'destroy']);
     });
 
     Route::middleware('role:organizer')->prefix('organizer')->group(function () {
@@ -46,6 +47,8 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::get('/dashboard', function () {
             return response()->json(['message' => 'Welcome to the attendee dashboard']);
         });
+        Route::post('/events/{event}/reviews', [ReviewController::class, 'store']);
+        Route::get('/user/reviews', [ReviewController::class, 'getUserReviews']);
     });
 
     // Notification routes (accessible by all authenticated users)
@@ -66,7 +69,8 @@ Route::middleware(['auth:sanctum'])->group(function () {
         });
     });
 });
-
+// Public routes
+Route::get('/events/{event}/reviews', [ReviewController::class, 'getEventReviews']);
 // Public Event Routes (No authentication required)
 Route::prefix('public')->group(function () {
     Route::get('/events', [PublicEventController::class, 'index']);
