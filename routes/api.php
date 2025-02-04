@@ -48,7 +48,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
             return response()->json(['message' => 'Welcome to the attendee dashboard']);
         });
         Route::post('/events/{event}/reviews', [ReviewController::class, 'store']);
-        Route::get('/user/reviews', [ReviewController::class, 'getUserReviews']);
+        Route::get('/reviews', [ReviewController::class, 'getUserReviews']);
     });
 
     // Notification routes (accessible by all authenticated users)
